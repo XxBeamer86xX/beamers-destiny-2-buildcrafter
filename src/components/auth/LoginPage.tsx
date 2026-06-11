@@ -1,7 +1,10 @@
 import { Shield } from 'lucide-react'
 import { bungieApi } from '../../lib/bungie-api'
+import { useAuthStore } from '../../store/authStore'
 
 export function LoginPage() {
+  const error = useAuthStore(s => s.error)
+
   const handleLogin = () => {
     window.location.href = bungieApi.getOAuthUrl()
   }
@@ -41,6 +44,14 @@ export function LoginPage() {
             </div>
           ))}
         </div>
+
+        {/* Auth error */}
+        {error && !apiKeyMissing && (
+          <div className="w-full bg-red-900/20 border border-red-500/30 rounded-lg p-4 text-sm text-red-400">
+            <p className="font-semibold mb-1">Authentication error</p>
+            <p className="text-gray-300 break-all">{error}</p>
+          </div>
+        )}
 
         {/* API key warning */}
         {apiKeyMissing && (
