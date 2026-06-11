@@ -14,12 +14,6 @@ const WEAPON_SLOT_LABELS: Record<string, string> = {
   power: 'Power',
 }
 
-const WEAPON_STAT_LABELS = [
-  { key: 'range', label: 'Range' },
-  { key: 'stability', label: 'Stability' },
-  { key: 'handling', label: 'Handling' },
-  { key: 'reload', label: 'Reload' },
-] as const
 
 function SmallStatBar({ label, value }: { label: string; value: number }) {
   const pct = Math.min(100, Math.max(0, value))

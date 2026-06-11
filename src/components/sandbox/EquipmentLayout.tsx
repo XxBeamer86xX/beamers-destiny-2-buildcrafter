@@ -1,5 +1,5 @@
 import { BUNGIE_ROOT } from '../../lib/bungie-api'
-import { TIER_COLORS, BUCKET_HASH_MAP } from '../../types/destiny'
+import { TIER_COLORS } from '../../types/destiny'
 import type { DestinyItem } from '../../types/destiny'
 
 interface EquipmentLayoutProps {

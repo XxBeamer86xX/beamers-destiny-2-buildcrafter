@@ -104,26 +104,6 @@ export function calcTotalStats(
 }
 
 export function getStatEffects(stats: ArmorStats, charClass: CharacterClass): StatEffects {
-  const makeStat = (
-    rawValue: number,
-    effectiveValue: number,
-    label: string,
-    primaryCooldown: number[],
-    primaryLabel: string,
-    secondaryDescFn?: (tier: number) => string
-  ): StatEffect => {
-    const tier = statToTier(effectiveValue)
-    const cd = primaryCooldown[tier]
-    return {
-      tier,
-      rawValue,
-      effectiveValue,
-      label,
-      description: `${primaryLabel}: ${fmtSeconds(cd)}`,
-      secondaryDescription: secondaryDescFn ? secondaryDescFn(tier) : undefined,
-    }
-  }
-
   // Class-specific ability label
   const mobilityAbilityLabel =
     charClass === 'hunter' ? 'Dodge' : 'Class Ability'

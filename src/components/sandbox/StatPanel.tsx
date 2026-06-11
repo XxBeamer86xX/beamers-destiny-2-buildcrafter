@@ -9,14 +9,7 @@ interface StatPanelProps {
 const STAT_ORDER = ['mobility', 'resilience', 'recovery', 'discipline', 'intellect', 'strength'] as const
 type StatKey = typeof STAT_ORDER[number]
 
-const STAT_LABELS: Record<StatKey, string> = {
-  mobility: 'MOB',
-  resilience: 'RES',
-  recovery: 'REC',
-  discipline: 'DIS',
-  intellect: 'INT',
-  strength: 'STR',
-}
+
 
 const STAT_FULL_LABELS: Record<StatKey, string> = {
   mobility: 'Mobility',
