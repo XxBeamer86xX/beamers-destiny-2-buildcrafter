@@ -14,7 +14,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const clientSecret = process.env.BUNGIE_CLIENT_SECRET
 
   if (!clientId || !clientSecret) {
-    return res.status(500).json({ error: 'Server not configured' })
+    return res.status(500).json({
+      error: 'Server not configured',
+      missing: [...(!clientId ? ['BUNGIE_CLIENT_ID'] : []), ...(!clientSecret ? ['BUNGIE_CLIENT_SECRET'] : [])],
+    })
   }
 
   try {
