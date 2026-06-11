@@ -1,21 +1,6 @@
 import { BUNGIE_ROOT } from '../../lib/bungie-api'
-import { SOCKET_CATEGORY, TIER_COLORS } from '../../types/destiny'
+import { TIER_COLORS } from '../../types/destiny'
 import type { DestinyItem } from '../../types/destiny'
-
-const ARMOR_PERKS_CATEGORY = 2518356196
-
-// plugCategoryIdentifier substrings that are generic mods, NOT exotic perks
-const GENERIC_PLUG_SUBSTRINGS = [
-  'barrel', 'scope', 'magazine', 'magazine_laser', 'stock', 'grip', 'haft',
-  'blade', 'guard', 'battery', 'tube', 'bowstring', 'arrow', 'tracker',
-  'masterwork', 'shader', 'ornament', 'transmat', 'ghost_mod', 'catalyst_empty',
-  'frames',
-]
-
-function isGenericPlug(plugCatId: string): boolean {
-  const lower = plugCatId.toLowerCase()
-  return GENERIC_PLUG_SUBSTRINGS.some(s => lower.includes(s))
-}
 
 interface EquipmentLayoutProps {
   virtualLoadout: Partial<Record<string, DestinyItem>>
@@ -108,59 +93,62 @@ interface ExoticPerkEntry {
   perks: NonNullable<DestinyItem['sockets']>[number]['plugDefinition'][]
 }
 
+// plugCategoryIdentifiers that are never the exotic perk — used for exclusion
+const EXCLUDED_PLUG_CATS = new Set([
+  'barrels', 'magazines', 'magazines_gl', 'stocks', 'grips', 'scopes',
+  'guards', 'blades', 'hafts', 'batteries', 'tubes', 'bowstrings', 'arrows',
+  'masterworks', 'masterworks.stat', 'trackers', 'frames', 'origin_traits',
+  'shader', 'transmat', 'ghost_mod', 'holographic',
+])
+
+function isExcludedPlug(plugCatId: string): boolean {
+  const lower = plugCatId.toLowerCase()
+  // Exclude if exact match or if it contains known generic substrings
+  if (EXCLUDED_PLUG_CATS.has(lower)) return true
+  if (lower.includes('masterwork') || lower.includes('tracker') ||
+      lower.includes('shader') || lower.includes('catalyst') ||
+      lower.includes('empty') || lower.includes('dummy')) return true
+  return false
+}
+
 function collectExoticPerks(virtualLoadout: Partial<Record<string, DestinyItem>>): ExoticPerkEntry[] {
   const entries: ExoticPerkEntry[] = []
 
-  // Armor — exotic trait is in ARMOR_PERKS socket; exclude generic mods by plugCategoryIdentifier
-  for (const slotName of ARMOR_SLOTS) {
+  const allSlots = [...ARMOR_SLOTS, ...WEAPON_SLOTS]
+
+  for (const slotName of allSlots) {
     const item = virtualLoadout[slotName]
     if (!item || item.tier !== 'exotic') continue
+
+    // Debug: log all sockets for first exotic found
+    if (import.meta.env.DEV) {
+      console.log(`[ExoticPerks] ${item.definition?.displayProperties?.name} sockets:`,
+        (item.sockets ?? []).map(s => ({
+          cat: s.categoryHash,
+          name: s.plugDefinition?.displayProperties?.name,
+          plugCat: s.plugDefinition?.plug?.plugCategoryIdentifier,
+          descLen: (s.plugDefinition?.displayProperties?.description ?? '').length,
+        }))
+      )
+    }
+
     const perks = (item.sockets ?? [])
       .filter(s => {
-        if (s.categoryHash !== ARMOR_PERKS_CATEGORY) return false
         if (!s.plugDefinition) return false
-        const plugCatId = (s.plugDefinition.plug?.plugCategoryIdentifier ?? '').toLowerCase()
+        const plugCatId = (s.plugDefinition.plug?.plugCategoryIdentifier ?? '')
         const desc = s.plugDefinition.displayProperties?.description ?? ''
-        // Exclude anything that looks like a generic stat/activity mod
-        if (isGenericPlug(plugCatId)) return false
-        return desc.length > 30
+        const name = s.plugDefinition.displayProperties?.name ?? ''
+        // Must have a real description
+        if (desc.length < 30) return false
+        // Exclude known generic plug types
+        if (isExcludedPlug(plugCatId)) return false
+        // Exclude unnamed or placeholder plugs
+        if (!name || name.toLowerCase().includes('empty')) return false
+        return true
       })
       .map(s => s.plugDefinition)
+      // For weapons take first match; for armor take first match
       .slice(0, 1)
-    if (perks.length > 0) entries.push({ item, perks })
-  }
-
-  // Weapons — exotic perk is in the INTRINSIC socket category (the weapon frame for exotics IS the exotic perk)
-  // Fall back to PERKS socket with plugCategoryIdentifier "intrinsics" for weapons that put it there instead
-  for (const slotName of WEAPON_SLOTS) {
-    const item = virtualLoadout[slotName]
-    if (!item || item.tier !== 'exotic') continue
-    const perks: ExoticPerkEntry['perks'] = []
-
-    // Primary: INTRINSIC socket with a description (this is the exotic frame/trait)
-    for (const s of item.sockets ?? []) {
-      if (s.categoryHash !== SOCKET_CATEGORY.INTRINSIC) continue
-      if (!s.plugDefinition) continue
-      const desc = s.plugDefinition.displayProperties?.description ?? ''
-      if (desc.length > 30) {
-        perks.push(s.plugDefinition)
-        break
-      }
-    }
-
-    // Fallback: PERKS socket where plug.plugCategoryIdentifier === "intrinsics"
-    if (perks.length === 0) {
-      for (const s of item.sockets ?? []) {
-        if (s.categoryHash !== SOCKET_CATEGORY.PERKS) continue
-        if (!s.plugDefinition) continue
-        const plugCatId = (s.plugDefinition.plug?.plugCategoryIdentifier ?? '').toLowerCase()
-        const desc = s.plugDefinition.displayProperties?.description ?? ''
-        if (plugCatId === 'intrinsics' && desc.length > 30) {
-          perks.push(s.plugDefinition)
-          break
-        }
-      }
-    }
 
     if (perks.length > 0) entries.push({ item, perks })
   }
