@@ -99,7 +99,7 @@ export function SettingsPage() {
           About
         </h2>
         <p className="text-sm text-gray-400">
-          D2 Loadout Manager uses the official Bungie.net API. Your data is never stored on any server —
+          Beamer's D2 Buildcrafter uses the official Bungie.net API. Your data is never stored on any server —
           everything lives in your browser.
         </p>
         <p className="text-xs text-gray-600">

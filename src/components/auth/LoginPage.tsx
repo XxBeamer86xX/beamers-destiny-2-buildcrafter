@@ -24,7 +24,7 @@ export function LoginPage() {
           <div className="w-20 h-20 rounded-full bg-destiny-card border border-destiny-border flex items-center justify-center shadow-legendary">
             <Shield className="w-10 h-10 text-legendary" />
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-wide">D2 Loadout Manager</h1>
+          <h1 className="text-3xl font-bold text-white tracking-wide">Beamer's D2 Buildcrafter</h1>
           <p className="text-destiny-border text-sm tracking-widest uppercase">
             Build · Analyze · Deploy
           </p>
