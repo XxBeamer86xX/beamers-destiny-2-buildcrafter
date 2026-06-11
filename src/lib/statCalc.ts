@@ -1,28 +1,9 @@
 import type { ArmorStats } from '../types/destiny'
-import type { CharacterClass } from '../types/destiny'
 
-// Cooldown tables indexed by tier 0-10
-// Armor 3.0 values (post-Witch Queen tuning)
-const COOLDOWN_TABLES = {
-  // Grenade (Discipline) — T0–T4 have steep penalty per Armor 3.0 tuning
-  GRENADE: [182, 162, 143, 128, 112, 96, 82, 68, 54, 40, 32],
-  // Super (Intellect)
-  SUPER: [437, 414, 390, 367, 343, 320, 296, 273, 249, 226, 202],
-  // Melee (Strength)
-  MELEE: [162, 144, 128, 112, 92, 77, 65, 52, 40, 27, 18],
-  // Rift (Recovery, Warlock)
-  RIFT: [93, 87, 81, 75, 69, 63, 52, 40, 29, 17, 10],
-  // Dodge (Mobility, Hunter)
-  DODGE: [29, 27, 26, 24, 22, 20, 17, 14, 11, 9, 6],
-  // Barricade (Resilience, Titan)
-  BARRICADE: [46, 44, 41, 39, 37, 34, 28, 22, 17, 11, 8],
-  // HP (Resilience) — base 200 PvP, bonus at T6+
-  HP: [200, 200, 200, 200, 200, 200, 215, 220, 225, 228, 230],
-  // PvP Damage Resistance % (Resilience)
-  PVP_DR: [0, 0, 0, 0, 0, 0, 7.5, 10, 15, 20, 30],
-  // PvE Damage Resistance % (Resilience)
-  PVE_DR: [0, 0, 0, 1, 2, 3, 6, 8, 10, 14, 30],
-}
+// Armor 3.0 (Edge of Fate, July 2025)
+// Stats: Weapons / Health / Class / Grenade / Super / Melee
+// Range: 0–200. Primary effects scale 0–100, secondary bonuses 101–200.
+// No tiers — every point has value.
 
 export interface StatTotals {
   raw: ArmorStats
@@ -30,37 +11,43 @@ export interface StatTotals {
 }
 
 export interface StatEffect {
-  tier: number
   rawValue: number
-  effectiveValue: number
+  effectiveValue: number    // capped at 200
   label: string
-  description: string
-  secondaryDescription?: string
-  effects: Array<{ label: string; value: string; highlight?: boolean }>
+  primaryEffects: Array<{ label: string; value: string; highlight?: boolean }>
+  secondaryEffects: Array<{ label: string; value: string; highlight?: boolean }>
+  inSecondary: boolean      // stat > 100
 }
 
 export interface StatEffects {
-  mobility: StatEffect
-  resilience: StatEffect
-  recovery: StatEffect
-  discipline: StatEffect
-  intellect: StatEffect
-  strength: StatEffect
+  mobility: StatEffect      // "Weapons" in-game
+  resilience: StatEffect    // "Health" in-game
+  recovery: StatEffect      // "Class" in-game
+  discipline: StatEffect    // "Grenade"
+  intellect: StatEffect     // "Super"
+  strength: StatEffect      // "Melee"
 }
 
-export function statToTier(value: number): number {
-  return Math.floor(Math.min(100, value) / 10)
+function cap(v: number): number {
+  return Math.min(200, Math.max(0, v))
 }
 
-function capStat(v: number): number {
+function pct(statVal: number, max: number, scaleTo: number): number {
+  return Math.round((Math.min(statVal, max) / max) * scaleTo)
+}
+
+function fmt(n: number, suffix = '%'): string {
+  return `${n > 0 ? '+' : ''}${n}${suffix}`
+}
+
+// Primary effects scale 0–100
+function primaryAt(v: number): number {
   return Math.min(100, Math.max(0, v))
 }
 
-function fmtSeconds(s: number): string {
-  if (s < 60) return `${s}s`
-  const m = Math.floor(s / 60)
-  const rem = s % 60
-  return rem > 0 ? `${m}m ${rem}s` : `${m}m`
+// Secondary effects scale 101–200 (0–100 within the secondary range)
+function secondaryAt(v: number): number {
+  return Math.min(100, Math.max(0, v - 100))
 }
 
 export function calcTotalStats(
@@ -92,12 +79,12 @@ export function calcTotalStats(
   raw.total = raw.mobility + raw.resilience + raw.recovery + raw.discipline + raw.intellect + raw.strength
 
   const effective: ArmorStats = {
-    mobility: capStat(raw.mobility),
-    resilience: capStat(raw.resilience),
-    recovery: capStat(raw.recovery),
-    discipline: capStat(raw.discipline),
-    intellect: capStat(raw.intellect),
-    strength: capStat(raw.strength),
+    mobility: cap(raw.mobility),
+    resilience: cap(raw.resilience),
+    recovery: cap(raw.recovery),
+    discipline: cap(raw.discipline),
+    intellect: cap(raw.intellect),
+    strength: cap(raw.strength),
     total: 0,
   }
   effective.total =
@@ -107,115 +94,136 @@ export function calcTotalStats(
   return { raw, effective }
 }
 
-export function getStatEffects(stats: ArmorStats, charClass: CharacterClass): StatEffects {
-  // Class-specific ability label
-  const mobilityAbilityLabel =
-    charClass === 'hunter' ? 'Dodge' : 'Class Ability'
-  const recoveryAbilityLabel =
-    charClass === 'warlock' ? 'Rift' : 'Class Ability'
-  const resilienceAbilityLabel =
-    charClass === 'titan' ? 'Barricade' : 'Class Ability'
-
-  const mobTier = statToTier(capStat(stats.mobility))
-  const resTier = statToTier(capStat(stats.resilience))
-  const recTier = statToTier(capStat(stats.recovery))
-  const disTier = statToTier(capStat(stats.discipline))
-  const intTier = statToTier(capStat(stats.intellect))
-  const strTier = statToTier(capStat(stats.strength))
-
-  const mobility: StatEffect = {
-    tier: mobTier,
-    rawValue: stats.mobility,
-    effectiveValue: capStat(stats.mobility),
-    label: 'Mobility',
-    description: charClass === 'hunter'
-      ? `${mobilityAbilityLabel}: ${fmtSeconds(COOLDOWN_TABLES.DODGE[mobTier])}`
-      : `${mobilityAbilityLabel}: N/A`,
-    effects: [
-      { label: 'Walk/Strafe Speed', value: mobTier >= 5 ? '↑↑' : mobTier >= 2 ? '↑' : '—' },
-      { label: 'Jump Height', value: mobTier >= 7 ? '↑↑' : mobTier >= 4 ? '↑' : '—' },
-      charClass === 'hunter'
-        ? { label: 'Dodge', value: fmtSeconds(COOLDOWN_TABLES.DODGE[mobTier]), highlight: true }
-        : { label: 'Class Ability', value: 'N/A' },
-    ],
+export function getStatEffects(stats: ArmorStats): StatEffects {
+  function makeWeapons(v: number): StatEffect {
+    const p = primaryAt(v)
+    const s = secondaryAt(v)
+    return {
+      rawValue: v,
+      effectiveValue: cap(v),
+      label: 'Weapons',
+      inSecondary: v > 100,
+      primaryEffects: [
+        { label: 'Reload Speed', value: fmt(pct(p, 100, 10)), highlight: p >= 70 },
+        { label: 'Handling', value: fmt(pct(p, 100, 10)), highlight: p >= 70 },
+        { label: 'PvE Weapon Dmg', value: fmt(pct(p, 100, 15)), highlight: p >= 80 },
+        { label: 'vs Guardians', value: fmt(pct(p, 100, 5)) },
+      ],
+      secondaryEffects: v > 100 ? [
+        { label: 'Double Ammo', value: `${pct(s, 100, 100)}% chance`, highlight: s >= 50 },
+      ] : [],
+    }
   }
 
-  const resilience: StatEffect = {
-    tier: resTier,
-    rawValue: stats.resilience,
-    effectiveValue: capStat(stats.resilience),
-    label: 'Resilience',
-    description: charClass === 'titan'
-      ? `${resilienceAbilityLabel}: ${fmtSeconds(COOLDOWN_TABLES.BARRICADE[resTier])}`
-      : `${resilienceAbilityLabel}: N/A`,
-    secondaryDescription: `HP: ${COOLDOWN_TABLES.HP[resTier]} · PvP DR: ${COOLDOWN_TABLES.PVP_DR[resTier]}%`,
-    effects: [
-      { label: 'HP', value: String(COOLDOWN_TABLES.HP[resTier]), highlight: resTier >= 6 },
-      { label: 'PvE DR', value: COOLDOWN_TABLES.PVE_DR[resTier] + '%', highlight: resTier >= 9 },
-      { label: 'PvP DR', value: COOLDOWN_TABLES.PVP_DR[resTier] + '%', highlight: resTier >= 6 },
-      charClass === 'titan'
-        ? { label: 'Barricade', value: fmtSeconds(COOLDOWN_TABLES.BARRICADE[resTier]), highlight: true }
-        : { label: 'Class Ability', value: 'N/A' },
-    ],
+  function makeHealth(v: number): StatEffect {
+    const p = primaryAt(v)
+    const s = secondaryAt(v)
+    return {
+      rawValue: v,
+      effectiveValue: cap(v),
+      label: 'Health',
+      inSecondary: v > 100,
+      primaryEffects: [
+        { label: 'Flinch Resist', value: fmt(pct(p, 100, 10)), highlight: p >= 60 },
+        { label: 'Orb HP Regen', value: `+${pct(p, 100, 70)} HP`, highlight: p >= 60 },
+      ],
+      secondaryEffects: v > 100 ? [
+        { label: 'Shield Cap', value: `+${pct(s, 100, 20)} HP`, highlight: s >= 50 },
+        { label: 'Shield Regen', value: fmt(pct(s, 100, 45)), highlight: s >= 50 },
+      ] : [],
+    }
   }
 
-  const recovery: StatEffect = {
-    tier: recTier,
-    rawValue: stats.recovery,
-    effectiveValue: capStat(stats.recovery),
-    label: 'Recovery',
-    description: charClass === 'warlock'
-      ? `${recoveryAbilityLabel}: ${fmtSeconds(COOLDOWN_TABLES.RIFT[recTier])}`
-      : `${recoveryAbilityLabel}: N/A`,
-    effects: [
-      { label: 'Overshield Regen', value: recTier >= 7 ? 'Fast' : recTier >= 4 ? 'Moderate' : 'Slow' },
-      charClass === 'warlock'
-        ? { label: 'Rift', value: fmtSeconds(COOLDOWN_TABLES.RIFT[recTier]), highlight: true }
-        : { label: 'Class Ability', value: 'N/A' },
-    ],
+  function makeClass(v: number): StatEffect {
+    const p = primaryAt(v)
+    const s = secondaryAt(v)
+    return {
+      rawValue: v,
+      effectiveValue: cap(v),
+      label: 'Class',
+      inSecondary: v > 100,
+      primaryEffects: [
+        { label: 'Ability Cooldown', value: `${fmt(-pct(p, 100, 65))}`, highlight: p >= 70 },
+        { label: 'Energy Gain', value: fmt(pct(p, 100, 190)), highlight: p >= 70 },
+      ],
+      secondaryEffects: v > 100 ? [
+        { label: 'Overshield (PvE)', value: `+${pct(s, 100, 40)} HP`, highlight: s >= 50 },
+        { label: 'Overshield (PvP)', value: `+${pct(s, 100, 20)} HP` },
+      ] : [],
+    }
   }
 
-  const discipline: StatEffect = {
-    tier: disTier,
-    rawValue: stats.discipline,
-    effectiveValue: capStat(stats.discipline),
-    label: 'Discipline',
-    description: `Grenade: ${fmtSeconds(COOLDOWN_TABLES.GRENADE[disTier])}`,
-    effects: [
-      { label: 'Grenade', value: fmtSeconds(COOLDOWN_TABLES.GRENADE[disTier]), highlight: true },
-    ],
+  function makeGrenade(v: number): StatEffect {
+    const p = primaryAt(v)
+    const s = secondaryAt(v)
+    return {
+      rawValue: v,
+      effectiveValue: cap(v),
+      label: 'Grenade',
+      inSecondary: v > 100,
+      primaryEffects: [
+        { label: 'Cooldown', value: `${fmt(-pct(p, 100, 65))}`, highlight: p >= 70 },
+        { label: 'Energy Gain', value: fmt(pct(p, 100, 190)), highlight: p >= 70 },
+      ],
+      secondaryEffects: v > 100 ? [
+        { label: 'PvE Damage', value: fmt(pct(s, 100, 65)), highlight: s >= 50 },
+        { label: 'PvP Damage', value: fmt(pct(s, 100, 20)) },
+      ] : [],
+    }
   }
 
-  const intellect: StatEffect = {
-    tier: intTier,
-    rawValue: stats.intellect,
-    effectiveValue: capStat(stats.intellect),
-    label: 'Intellect',
-    description: `Super: ${fmtSeconds(COOLDOWN_TABLES.SUPER[intTier])}`,
-    effects: [
-      { label: 'Super', value: fmtSeconds(COOLDOWN_TABLES.SUPER[intTier]), highlight: true },
-    ],
+  function makeSuper(v: number): StatEffect {
+    const p = primaryAt(v)
+    const s = secondaryAt(v)
+    return {
+      rawValue: v,
+      effectiveValue: cap(v),
+      label: 'Super',
+      inSecondary: v > 100,
+      primaryEffects: [
+        { label: 'Energy Gain', value: fmt(pct(p, 100, 190)), highlight: p >= 70 },
+      ],
+      secondaryEffects: v > 100 ? [
+        { label: 'PvE Damage', value: fmt(pct(s, 100, 45)), highlight: s >= 50 },
+        { label: 'PvP Damage', value: fmt(pct(s, 100, 15)) },
+      ] : [],
+    }
   }
 
-  const strength: StatEffect = {
-    tier: strTier,
-    rawValue: stats.strength,
-    effectiveValue: capStat(stats.strength),
-    label: 'Strength',
-    description: `Melee: ${fmtSeconds(COOLDOWN_TABLES.MELEE[strTier])}`,
-    effects: [
-      { label: 'Melee', value: fmtSeconds(COOLDOWN_TABLES.MELEE[strTier]), highlight: true },
-    ],
+  function makeMelee(v: number): StatEffect {
+    const p = primaryAt(v)
+    const s = secondaryAt(v)
+    return {
+      rawValue: v,
+      effectiveValue: cap(v),
+      label: 'Melee',
+      inSecondary: v > 100,
+      primaryEffects: [
+        { label: 'Cooldown', value: `${fmt(-pct(p, 100, 65))}`, highlight: p >= 70 },
+        { label: 'Energy Gain', value: fmt(pct(p, 100, 190)), highlight: p >= 70 },
+      ],
+      secondaryEffects: v > 100 ? [
+        { label: 'PvE Damage', value: fmt(pct(s, 100, 30)), highlight: s >= 50 },
+        { label: 'PvP Damage', value: fmt(pct(s, 100, 20)) },
+      ] : [],
+    }
   }
 
-  return { mobility, resilience, recovery, discipline, intellect, strength }
+  return {
+    mobility: makeWeapons(stats.mobility),
+    resilience: makeHealth(stats.resilience),
+    recovery: makeClass(stats.recovery),
+    discipline: makeGrenade(stats.discipline),
+    intellect: makeSuper(stats.intellect),
+    strength: makeMelee(stats.strength),
+  }
 }
 
-// Color for a given tier level
-export function tierColor(tier: number): string {
-  if (tier >= 10) return '#C4A55A' // exotic gold
-  if (tier >= 7) return '#4ade80'  // green
-  if (tier >= 5) return '#60a5fa'  // blue
-  if (tier >= 3) return '#facc15'  // yellow
-  return '#9ca3af'                 // gray
+// Color based on stat value in new 0-200 system
+export function statColor(v: number): string {
+  if (v > 100) return '#C4A55A'  // gold — in secondary bonus territory
+  if (v >= 80) return '#4ade80'  // green
+  if (v >= 50) return '#60a5fa'  // blue
+  if (v >= 20) return '#facc15'  // yellow
+  return '#9ca3af'               // gray
 }

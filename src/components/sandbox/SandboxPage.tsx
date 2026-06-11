@@ -185,7 +185,7 @@ export function SandboxPage() {
 
           {/* Middle: Stat panel */}
           <div>
-            <StatPanel virtualLoadout={virtualLoadout} charClass={charClass} />
+            <StatPanel virtualLoadout={virtualLoadout} />
           </div>
 
           {/* Right: Build panel */}
