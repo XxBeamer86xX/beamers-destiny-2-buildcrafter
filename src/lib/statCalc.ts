@@ -2,20 +2,21 @@ import type { ArmorStats } from '../types/destiny'
 import type { CharacterClass } from '../types/destiny'
 
 // Cooldown tables indexed by tier 0-10
+// Armor 3.0 values (post-Witch Queen tuning)
 const COOLDOWN_TABLES = {
-  // Grenade (Discipline)
-  GRENADE: [121, 116, 111, 106, 101, 96, 82, 68, 54, 40, 32],
+  // Grenade (Discipline) — T0–T4 have steep penalty per Armor 3.0 tuning
+  GRENADE: [182, 162, 143, 128, 112, 96, 82, 68, 54, 40, 32],
   // Super (Intellect)
   SUPER: [437, 414, 390, 367, 343, 320, 296, 273, 249, 226, 202],
   // Melee (Strength)
-  MELEE: [102, 97, 92, 87, 82, 77, 65, 52, 40, 27, 18],
+  MELEE: [162, 144, 128, 112, 92, 77, 65, 52, 40, 27, 18],
   // Rift (Recovery, Warlock)
   RIFT: [93, 87, 81, 75, 69, 63, 52, 40, 29, 17, 10],
   // Dodge (Mobility, Hunter)
   DODGE: [29, 27, 26, 24, 22, 20, 17, 14, 11, 9, 6],
   // Barricade (Resilience, Titan)
   BARRICADE: [46, 44, 41, 39, 37, 34, 28, 22, 17, 11, 8],
-  // HP bonus (Resilience)
+  // HP (Resilience) — base 200 PvP, bonus at T6+
   HP: [200, 200, 200, 200, 200, 200, 215, 220, 225, 228, 230],
   // PvP Damage Resistance % (Resilience)
   PVP_DR: [0, 0, 0, 0, 0, 0, 7.5, 10, 15, 20, 30],

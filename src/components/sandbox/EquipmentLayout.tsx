@@ -2,6 +2,21 @@ import { BUNGIE_ROOT } from '../../lib/bungie-api'
 import { SOCKET_CATEGORY, TIER_COLORS } from '../../types/destiny'
 import type { DestinyItem } from '../../types/destiny'
 
+const ARMOR_PERKS_CATEGORY = 2518356196
+
+// plugCategoryIdentifier substrings that are generic mods, NOT exotic perks
+const GENERIC_PLUG_SUBSTRINGS = [
+  'barrel', 'scope', 'magazine', 'magazine_laser', 'stock', 'grip', 'haft',
+  'blade', 'guard', 'battery', 'tube', 'bowstring', 'arrow', 'tracker',
+  'masterwork', 'shader', 'ornament', 'transmat', 'ghost_mod', 'catalyst_empty',
+  'frames',
+]
+
+function isGenericPlug(plugCatId: string): boolean {
+  const lower = plugCatId.toLowerCase()
+  return GENERIC_PLUG_SUBSTRINGS.some(s => lower.includes(s))
+}
+
 interface EquipmentLayoutProps {
   virtualLoadout: Partial<Record<string, DestinyItem>>
   originalLoadout: Partial<Record<string, DestinyItem>>
@@ -96,17 +111,26 @@ interface ExoticPerkEntry {
 function collectExoticPerks(virtualLoadout: Partial<Record<string, DestinyItem>>): ExoticPerkEntry[] {
   const entries: ExoticPerkEntry[] = []
 
-  // Armor
+  // Armor — exotic trait lives in the ARMOR_PERKS socket category
   for (const slotName of ARMOR_SLOTS) {
     const item = virtualLoadout[slotName]
     if (!item || item.tier !== 'exotic') continue
     const perks = (item.sockets ?? [])
-      .filter(s => s.categoryHash === SOCKET_CATEGORY.INTRINSIC && s.plugDefinition && (s.plugDefinition.displayProperties?.description?.length ?? 0) > 20)
+      .filter(s => {
+        if (s.categoryHash !== ARMOR_PERKS_CATEGORY) return false
+        if (!s.plugDefinition) return false
+        const plugCat = ((s.plugDefinition as { plugCategoryIdentifier?: string }).plugCategoryIdentifier ?? '').toLowerCase()
+        const desc = s.plugDefinition.displayProperties?.description ?? ''
+        // Keep if it looks like an exotic intrinsic perk (not a generic mod)
+        return !isGenericPlug(plugCat) && desc.length > 30
+      })
       .map(s => s.plugDefinition)
+      // Take only the first match — the exotic trait is always the first meaningful socket
+      .slice(0, 1)
     if (perks.length > 0) entries.push({ item, perks })
   }
 
-  // Weapons
+  // Weapons — exotic perk has plugCategoryIdentifier === "intrinsics" in the PERKS socket category
   for (const slotName of WEAPON_SLOTS) {
     const item = virtualLoadout[slotName]
     if (!item || item.tier !== 'exotic') continue
@@ -114,20 +138,9 @@ function collectExoticPerks(virtualLoadout: Partial<Record<string, DestinyItem>>
     for (const s of item.sockets ?? []) {
       if (!s.plugDefinition) continue
       const plug = s.plugDefinition
-      const dispDesc = plug.displayProperties?.description ?? ''
-      // Intrinsic sockets with a long description
-      if (s.categoryHash === SOCKET_CATEGORY.INTRINSIC && dispDesc.length > 30) {
-        perks.push(plug)
-        continue
-      }
-      // Perk sockets with a long displayProperties description
-      if (s.categoryHash === SOCKET_CATEGORY.PERKS && dispDesc.length > 30) {
-        perks.push(plug)
-        continue
-      }
-      // Catalyst sockets
-      const plugCat = (plug as { plugCategoryIdentifier?: string }).plugCategoryIdentifier ?? ''
-      if (plug.displayProperties?.name?.includes('Catalyst') || plugCat.includes('catalyst')) {
+      const plugCat = ((plug as { plugCategoryIdentifier?: string }).plugCategoryIdentifier ?? '').toLowerCase()
+      // Exotic weapon perk: in PERKS socket category with plugCategoryIdentifier "intrinsics"
+      if (s.categoryHash === SOCKET_CATEGORY.PERKS && plugCat === 'intrinsics') {
         perks.push(plug)
       }
     }
