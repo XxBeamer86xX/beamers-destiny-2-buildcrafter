@@ -19,6 +19,8 @@ const COOLDOWN_TABLES = {
   HP: [200, 200, 200, 200, 200, 200, 215, 220, 225, 228, 230],
   // PvP Damage Resistance % (Resilience)
   PVP_DR: [0, 0, 0, 0, 0, 0, 7.5, 10, 15, 20, 30],
+  // PvE Damage Resistance % (Resilience)
+  PVE_DR: [0, 0, 0, 1, 2, 3, 6, 8, 10, 14, 30],
 }
 
 export interface StatTotals {
@@ -33,6 +35,7 @@ export interface StatEffect {
   label: string
   description: string
   secondaryDescription?: string
+  effects: Array<{ label: string; value: string; highlight?: boolean }>
 }
 
 export interface StatEffects {
@@ -49,7 +52,7 @@ export function statToTier(value: number): number {
 }
 
 function capStat(v: number): number {
-  return Math.min(100, v)
+  return Math.min(100, Math.max(0, v))
 }
 
 function fmtSeconds(s: number): string {
@@ -127,6 +130,13 @@ export function getStatEffects(stats: ArmorStats, charClass: CharacterClass): St
     description: charClass === 'hunter'
       ? `${mobilityAbilityLabel}: ${fmtSeconds(COOLDOWN_TABLES.DODGE[mobTier])}`
       : `${mobilityAbilityLabel}: N/A`,
+    effects: [
+      { label: 'Walk/Strafe Speed', value: mobTier >= 5 ? '↑↑' : mobTier >= 2 ? '↑' : '—' },
+      { label: 'Jump Height', value: mobTier >= 7 ? '↑↑' : mobTier >= 4 ? '↑' : '—' },
+      charClass === 'hunter'
+        ? { label: 'Dodge', value: fmtSeconds(COOLDOWN_TABLES.DODGE[mobTier]), highlight: true }
+        : { label: 'Class Ability', value: 'N/A' },
+    ],
   }
 
   const resilience: StatEffect = {
@@ -138,6 +148,14 @@ export function getStatEffects(stats: ArmorStats, charClass: CharacterClass): St
       ? `${resilienceAbilityLabel}: ${fmtSeconds(COOLDOWN_TABLES.BARRICADE[resTier])}`
       : `${resilienceAbilityLabel}: N/A`,
     secondaryDescription: `HP: ${COOLDOWN_TABLES.HP[resTier]} · PvP DR: ${COOLDOWN_TABLES.PVP_DR[resTier]}%`,
+    effects: [
+      { label: 'HP', value: String(COOLDOWN_TABLES.HP[resTier]), highlight: resTier >= 6 },
+      { label: 'PvE DR', value: COOLDOWN_TABLES.PVE_DR[resTier] + '%', highlight: resTier >= 9 },
+      { label: 'PvP DR', value: COOLDOWN_TABLES.PVP_DR[resTier] + '%', highlight: resTier >= 6 },
+      charClass === 'titan'
+        ? { label: 'Barricade', value: fmtSeconds(COOLDOWN_TABLES.BARRICADE[resTier]), highlight: true }
+        : { label: 'Class Ability', value: 'N/A' },
+    ],
   }
 
   const recovery: StatEffect = {
@@ -148,6 +166,12 @@ export function getStatEffects(stats: ArmorStats, charClass: CharacterClass): St
     description: charClass === 'warlock'
       ? `${recoveryAbilityLabel}: ${fmtSeconds(COOLDOWN_TABLES.RIFT[recTier])}`
       : `${recoveryAbilityLabel}: N/A`,
+    effects: [
+      { label: 'Overshield Regen', value: recTier >= 7 ? 'Fast' : recTier >= 4 ? 'Moderate' : 'Slow' },
+      charClass === 'warlock'
+        ? { label: 'Rift', value: fmtSeconds(COOLDOWN_TABLES.RIFT[recTier]), highlight: true }
+        : { label: 'Class Ability', value: 'N/A' },
+    ],
   }
 
   const discipline: StatEffect = {
@@ -156,6 +180,9 @@ export function getStatEffects(stats: ArmorStats, charClass: CharacterClass): St
     effectiveValue: capStat(stats.discipline),
     label: 'Discipline',
     description: `Grenade: ${fmtSeconds(COOLDOWN_TABLES.GRENADE[disTier])}`,
+    effects: [
+      { label: 'Grenade', value: fmtSeconds(COOLDOWN_TABLES.GRENADE[disTier]), highlight: true },
+    ],
   }
 
   const intellect: StatEffect = {
@@ -164,6 +191,9 @@ export function getStatEffects(stats: ArmorStats, charClass: CharacterClass): St
     effectiveValue: capStat(stats.intellect),
     label: 'Intellect',
     description: `Super: ${fmtSeconds(COOLDOWN_TABLES.SUPER[intTier])}`,
+    effects: [
+      { label: 'Super', value: fmtSeconds(COOLDOWN_TABLES.SUPER[intTier]), highlight: true },
+    ],
   }
 
   const strength: StatEffect = {
@@ -172,6 +202,9 @@ export function getStatEffects(stats: ArmorStats, charClass: CharacterClass): St
     effectiveValue: capStat(stats.strength),
     label: 'Strength',
     description: `Melee: ${fmtSeconds(COOLDOWN_TABLES.MELEE[strTier])}`,
+    effects: [
+      { label: 'Melee', value: fmtSeconds(COOLDOWN_TABLES.MELEE[strTier]), highlight: true },
+    ],
   }
 
   return { mobility, resilience, recovery, discipline, intellect, strength }

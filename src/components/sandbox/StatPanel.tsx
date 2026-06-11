@@ -92,11 +92,20 @@ export function StatPanel({ virtualLoadout, charClass }: StatPanelProps) {
                 })}
               </div>
 
-              {/* Effect description */}
-              <p className="text-[10px] text-gray-500 mt-0.5">{effect.description}</p>
-              {effect.secondaryDescription && (
-                <p className="text-[10px] text-gray-600">{effect.secondaryDescription}</p>
-              )}
+              {/* Effect rows */}
+              <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 mt-1">
+                {effect.effects.map((eff, i) => (
+                  <div key={i} className="flex justify-between items-center">
+                    <span className="text-[10px] text-gray-600">{eff.label}</span>
+                    <span
+                      className="text-[10px] font-medium"
+                      style={{ color: eff.highlight ? '#a78bfa' : '#9ca3af' }}
+                    >
+                      {eff.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )
         })}

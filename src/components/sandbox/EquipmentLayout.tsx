@@ -1,5 +1,5 @@
 import { BUNGIE_ROOT } from '../../lib/bungie-api'
-import { TIER_COLORS } from '../../types/destiny'
+import { SOCKET_CATEGORY, TIER_COLORS } from '../../types/destiny'
 import type { DestinyItem } from '../../types/destiny'
 
 interface EquipmentLayoutProps {
@@ -85,6 +85,58 @@ function SlotButton({ slot, item, originalItem, onClick }: SlotButtonProps) {
   )
 }
 
+const ARMOR_SLOTS = ['helmet', 'gauntlets', 'chest', 'legs', 'classItem']
+const WEAPON_SLOTS = ['kinetic', 'energy', 'power']
+
+interface ExoticPerkEntry {
+  item: DestinyItem
+  perks: NonNullable<DestinyItem['sockets']>[number]['plugDefinition'][]
+}
+
+function collectExoticPerks(virtualLoadout: Partial<Record<string, DestinyItem>>): ExoticPerkEntry[] {
+  const entries: ExoticPerkEntry[] = []
+
+  // Armor
+  for (const slotName of ARMOR_SLOTS) {
+    const item = virtualLoadout[slotName]
+    if (!item || item.tier !== 'exotic') continue
+    const perks = (item.sockets ?? [])
+      .filter(s => s.categoryHash === SOCKET_CATEGORY.INTRINSIC && s.plugDefinition && (s.plugDefinition.displayProperties?.description?.length ?? 0) > 20)
+      .map(s => s.plugDefinition)
+    if (perks.length > 0) entries.push({ item, perks })
+  }
+
+  // Weapons
+  for (const slotName of WEAPON_SLOTS) {
+    const item = virtualLoadout[slotName]
+    if (!item || item.tier !== 'exotic') continue
+    const perks: ExoticPerkEntry['perks'] = []
+    for (const s of item.sockets ?? []) {
+      if (!s.plugDefinition) continue
+      const plug = s.plugDefinition
+      const dispDesc = plug.displayProperties?.description ?? ''
+      // Intrinsic sockets with a long description
+      if (s.categoryHash === SOCKET_CATEGORY.INTRINSIC && dispDesc.length > 30) {
+        perks.push(plug)
+        continue
+      }
+      // Perk sockets with a long displayProperties description
+      if (s.categoryHash === SOCKET_CATEGORY.PERKS && dispDesc.length > 30) {
+        perks.push(plug)
+        continue
+      }
+      // Catalyst sockets
+      const plugCat = (plug as { plugCategoryIdentifier?: string }).plugCategoryIdentifier ?? ''
+      if (plug.displayProperties?.name?.includes('Catalyst') || plugCat.includes('catalyst')) {
+        perks.push(plug)
+      }
+    }
+    if (perks.length > 0) entries.push({ item, perks })
+  }
+
+  return entries
+}
+
 export function EquipmentLayout({ virtualLoadout, originalLoadout, onSlotClick }: EquipmentLayoutProps) {
   const slot = (name: string) => (
     <SlotButton
@@ -94,6 +146,8 @@ export function EquipmentLayout({ virtualLoadout, originalLoadout, onSlotClick }
       onClick={() => onSlotClick(name)}
     />
   )
+
+  const exoticEntries = collectExoticPerks(virtualLoadout)
 
   return (
     <div className="flex flex-col items-center gap-2 py-2">
@@ -130,6 +184,57 @@ export function EquipmentLayout({ virtualLoadout, originalLoadout, onSlotClick }
           <span key={s} className="text-[10px] text-gray-600 capitalize">{SLOT_LABELS[s]}</span>
         ))}
       </div>
+
+      {/* Exotic Perks */}
+      {exoticEntries.length > 0 && (
+        <>
+          <div className="w-full border-t border-destiny-border my-1" />
+          <div className="w-full">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-1">Exotic Perks</p>
+            <div className="max-h-64 overflow-y-auto space-y-3">
+              {exoticEntries.map((entry, ei) => {
+                const icon = entry.item.definition?.displayProperties?.icon
+                return (
+                  <div key={ei} className="space-y-1.5 mt-2">
+                    {/* Item header */}
+                    <div className="flex items-center gap-1.5">
+                      <div
+                        style={{ borderColor: TIER_COLORS[entry.item.tier ?? 'legendary'] }}
+                        className="w-6 h-6 rounded border overflow-hidden flex-shrink-0"
+                      >
+                        {icon && <img src={`${BUNGIE_ROOT}${icon}`} className="w-full h-full object-cover" alt="" />}
+                      </div>
+                      <span className="text-xs font-bold text-exotic">
+                        {entry.item.definition?.displayProperties?.name}
+                      </span>
+                    </div>
+                    {/* Each perk */}
+                    {entry.perks.map((perk, i) => (
+                      <div key={i} className="pl-2 border-l-2 border-exotic/30">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          {perk?.displayProperties?.icon && (
+                            <img
+                              src={`${BUNGIE_ROOT}${perk.displayProperties.icon}`}
+                              className="w-4 h-4 rounded-sm flex-shrink-0"
+                              alt=""
+                            />
+                          )}
+                          <span className="text-[11px] font-semibold text-exotic/90">
+                            {perk?.displayProperties?.name}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 leading-tight">
+                          {perk?.displayProperties?.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
