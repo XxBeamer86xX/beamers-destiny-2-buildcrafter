@@ -132,23 +132,28 @@ function collectExoticPerks(virtualLoadout: Partial<Record<string, DestinyItem>>
       )
     }
 
+    const isWeapon = WEAPON_SLOTS.includes(slotName as typeof WEAPON_SLOTS[number])
+
     const perks = (item.sockets ?? [])
       .filter(s => {
         if (!s.plugDefinition) return false
         const plugCatId = (s.plugDefinition.plug?.plugCategoryIdentifier ?? '')
         const desc = s.plugDefinition.displayProperties?.description ?? ''
         const name = s.plugDefinition.displayProperties?.name ?? ''
-        // Must have a real description
-        if (desc.length < 30) return false
-        // Exclude known generic plug types
-        if (isExcludedPlug(plugCatId)) return false
-        // Exclude unnamed or placeholder plugs
+        // Must have a real name and description
         if (!name || name.toLowerCase().includes('empty')) return false
+        if (desc.length < 30) return false
+        // For armor: exclude the archetype socket (contains "Primary Stat:")
+        if (!isWeapon && desc.includes('Primary Stat:')) return false
+        // For weapons: include catalyst sockets only if actually filled (not "Empty Catalyst Socket")
+        if (isWeapon && (plugCatId.toLowerCase().includes('catalyst') || name.toLowerCase().includes('catalyst'))) {
+          return !name.toLowerCase().includes('empty')
+        }
+        // Exclude all other known generic plug types
+        if (isExcludedPlug(plugCatId)) return false
         return true
       })
       .map(s => s.plugDefinition)
-      // For weapons take first match; for armor take first match
-      .slice(0, 1)
 
     if (perks.length > 0) entries.push({ item, perks })
   }
