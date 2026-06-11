@@ -29,6 +29,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code,
+        redirect_uri: process.env.VITE_REDIRECT_URL ?? '',
       }),
     })
 
