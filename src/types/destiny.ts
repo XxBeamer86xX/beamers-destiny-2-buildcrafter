@@ -150,6 +150,7 @@ export interface DestinyItem {
   sockets?: ResolvedSocket[]
   // Stats
   stats?: ArmorStats
+  weaponStats?: WeaponStats
 }
 
 export interface ResolvedSocket {
@@ -170,6 +171,30 @@ export interface ArmorStats {
   intellect: number
   strength: number
   total: number
+}
+
+export const WEAPON_STAT_HASHES = {
+  RPM: 4284893193,
+  MAGAZINE: 3871231066,
+  RELOAD_SPEED: 447667954,
+  IMPACT: 4043523819,
+  RANGE: 1240592695,
+  STABILITY: 155624089,
+  HANDLING: 943549884,
+  AIM_ASSISTANCE: 1345609583,
+  ZOOM: 3555269338,
+}
+
+export interface WeaponStats {
+  rpm: number
+  magazine: number
+  reloadSpeed: number
+  impact: number
+  range: number
+  stability: number
+  handling: number
+  aimAssistance: number
+  zoom: number
 }
 
 export interface SubclassDetails {

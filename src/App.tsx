@@ -10,6 +10,7 @@ import { CharacterPage } from './components/character/CharacterPage'
 import { VaultPage } from './components/vault/VaultPage'
 import { LoadoutsPage } from './components/loadout/LoadoutsPage'
 import { SettingsPage } from './components/settings/SettingsPage'
+import { SandboxPage } from './components/sandbox/SandboxPage'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { accessToken } = useAuthStore()
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="loadouts" element={<LoadoutsPage />} />
         <Route path="import" element={<LoadoutsPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="sandbox" element={<SandboxPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

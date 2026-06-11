@@ -4,11 +4,12 @@ import type {
   DestinyProfileResponse,
   DestinyInventoryItemDefinition,
 } from '../types/bungie'
-import type { DestinyItem, ResolvedSocket, ArmorStats } from '../types/destiny'
+import type { DestinyItem, ResolvedSocket, ArmorStats, WeaponStats } from '../types/destiny'
 import {
   TIER_TYPE_MAP,
   DAMAGE_TYPE_HASH_MAP,
   ARMOR_STAT_HASHES,
+  WEAPON_STAT_HASHES,
   SOCKET_CATEGORY,
 } from '../types/destiny'
 import { getItems } from './manifest'
@@ -101,6 +102,7 @@ export async function enrichItems(
 
     // Armor stats
     let stats: ArmorStats | undefined
+    let weaponStats: WeaponStats | undefined
     if (statsData?.stats) {
       const s = statsData.stats
       const get = (hash: number) => s[hash]?.value ?? 0
@@ -113,6 +115,23 @@ export async function enrichItems(
       const total = mobility + resilience + recovery + discipline + intellect + strength
       if (total > 0) {
         stats = { mobility, resilience, recovery, discipline, intellect, strength, total }
+      }
+
+      // Weapon stats
+      const rpm = get(WEAPON_STAT_HASHES.RPM)
+      const magazine = get(WEAPON_STAT_HASHES.MAGAZINE)
+      if (rpm > 0 || magazine > 0) {
+        weaponStats = {
+          rpm,
+          magazine,
+          reloadSpeed: get(WEAPON_STAT_HASHES.RELOAD_SPEED),
+          impact: get(WEAPON_STAT_HASHES.IMPACT),
+          range: get(WEAPON_STAT_HASHES.RANGE),
+          stability: get(WEAPON_STAT_HASHES.STABILITY),
+          handling: get(WEAPON_STAT_HASHES.HANDLING),
+          aimAssistance: get(WEAPON_STAT_HASHES.AIM_ASSISTANCE),
+          zoom: get(WEAPON_STAT_HASHES.ZOOM),
+        }
       }
     }
 
@@ -142,6 +161,7 @@ export async function enrichItems(
       itemCategory: def ? getItemCategory(def) : undefined,
       sockets,
       stats,
+      weaponStats,
     })
   }
 

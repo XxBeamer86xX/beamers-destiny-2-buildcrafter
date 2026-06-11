@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { User, Archive, BookMarked, Settings, Upload } from 'lucide-react'
+import { User, Archive, BookMarked, Settings, Upload, Swords } from 'lucide-react'
 import clsx from 'clsx'
 
 const NAV = [
@@ -7,6 +7,7 @@ const NAV = [
   { to: '/vault', icon: Archive, label: 'Vault' },
   { to: '/loadouts', icon: BookMarked, label: 'Loadouts' },
   { to: '/import', icon: Upload, label: 'DIM Import' },
+  { to: '/sandbox', icon: Swords, label: 'Sandbox' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
