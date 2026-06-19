@@ -1,4 +1,4 @@
-import { X, Zap, Star } from 'lucide-react'
+import { X, Star } from 'lucide-react'
 import clsx from 'clsx'
 import type { DestinyItem } from '../../types/destiny'
 import {
@@ -124,12 +124,6 @@ export function ItemModal({ item, onClose }: ItemModalProps) {
                   <span className="capitalize">{item.damageType}</span>
                 </span>
               )}
-              {item.energy && (
-                <span className="flex items-center gap-1">
-                  <Zap className="w-3 h-3 text-arc" />
-                  <span>{item.energy.used}/{item.energy.capacity}</span>
-                </span>
-              )}
             </div>
           </div>
 
@@ -223,11 +217,6 @@ export function ItemModal({ item, onClose }: ItemModalProps) {
                     <span className="text-xs text-gray-300">
                       {s.plugDefinition?.displayProperties?.name}
                     </span>
-                    {s.plugDefinition?.plug?.energyCost && (
-                      <span className="text-xs text-arc ml-0.5">
-                        {s.plugDefinition.plug.energyCost.energyCost}
-                      </span>
-                    )}
                   </div>
                 ))}
               </div>
@@ -247,18 +236,16 @@ export function ItemModal({ item, onClose }: ItemModalProps) {
                 {armorStatOrder.map((hash, i) => {
                   const value = statValues[i]
                   const name = ARMOR_STAT_NAMES[hash]
-                  const tier = Math.floor(value / 10)
                   return (
                     <div key={hash} className="flex items-center gap-2">
                       <span className="text-xs text-gray-400 w-20 flex-shrink-0">{name}</span>
                       <div className="flex-1 bg-destiny-surface rounded-full h-1.5">
                         <div
                           className="h-1.5 rounded-full bg-legendary transition-all"
-                          style={{ width: `${Math.min((value / 100) * 100, 100)}%` }}
+                          style={{ width: `${Math.min(value, 100)}%` }}
                         />
                       </div>
                       <span className="text-xs font-mono text-white w-6 text-right">{value}</span>
-                      <span className="text-xs text-gray-500 w-4">T{tier}</span>
                     </div>
                   )
                 })}

@@ -47,6 +47,7 @@ export interface DestinyProfileResponse {
   characters: { data: Record<string, DestinyCharacterComponent>; privacy: number }
   characterInventories: { data: Record<string, { items: DestinyItemComponent[] }>; privacy: number }
   characterEquipment: { data: Record<string, { items: DestinyItemComponent[] }>; privacy: number }
+  characterActivities: { data: Record<string, DestinyCharacterActivitiesComponent>; privacy: number }
   itemComponents: {
     instances: { data: Record<string, DestinyItemInstanceComponent> }
     sockets: { data: Record<string, { sockets: DestinyItemSocketState[] }> }
@@ -152,6 +153,7 @@ export interface DestinyManifest {
 
 export interface DestinyInventoryItemDefinition {
   hash: number
+  redacted?: boolean
   displayProperties: {
     name: string
     description: string
@@ -273,5 +275,53 @@ export interface DestinyPlugSetDefinition {
   reusablePlugItems: Array<{ plugItemHash: number; currentlyCanRoll: boolean }>
   isFakePlugSet: boolean
   index: number
+  redacted: boolean
+}
+
+// CharacterActivities component (204)
+export interface DestinyCharacterActivitiesComponent {
+  dateActivityStarted: string
+  currentActivityHash: number
+  currentActivityModeHash: number
+  currentActivityModeType: number
+  currentPlaylistActivityHash: number
+  lastCompletedStoryHash: number
+  availableActivities: Array<{ activityHash: number }>
+}
+
+// Zone loot manifest types
+export interface DestinyActivityDefinition {
+  hash: number
+  displayProperties: { name: string; description: string; icon?: string }
+  activityTypeHash: number
+  destinationHash: number
+  placeHash: number
+  activityModeTypes: number[]
+  activityModeHashes: number[]
+  rewards: Array<{ rewardItems: Array<{ itemHash: number; quantity: number }> }>
+  isPlaylist: boolean
+  redacted: boolean
+}
+
+export interface DestinyDestinationDefinition {
+  hash: number
+  displayProperties: { name: string; description: string }
+  placeHash: number
+  defaultFreeroamActivityHash: number
+  redacted: boolean
+}
+
+export interface DestinyCollectibleDefinition {
+  hash: number
+  displayProperties: { name: string; description: string; icon?: string }
+  sourceHash: number
+  itemHash: number
+  redacted: boolean
+}
+
+export interface DestinyRewardSourceDefinition {
+  hash: number
+  displayProperties: { name: string; description: string; icon?: string }
+  category: number
   redacted: boolean
 }

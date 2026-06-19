@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import { Header } from './Header'
 import { Sidebar } from './Sidebar'
 import { ManifestLoader } from '../shared/ManifestLoader'
+import { ZoneLootPane } from '../zone/ZoneLootPane'
 
 export function Layout() {
   return (
@@ -13,6 +14,7 @@ export function Layout() {
           <ManifestLoader />
           <Outlet />
         </main>
+        <ZoneLootPane />
       </div>
     </div>
   )

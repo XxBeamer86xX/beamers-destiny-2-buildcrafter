@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Lock, Zap } from 'lucide-react'
+import { Lock } from 'lucide-react'
 import clsx from 'clsx'
 import type { DestinyItem } from '../../types/destiny'
 import { TIER_COLORS, DAMAGE_TYPE_COLORS } from '../../types/destiny'
@@ -110,16 +110,6 @@ export function ItemCard({ item, size = 'md', showPower = true, onSlotClick, slo
         {(item.state & 1) !== 0 && (
           <div className="absolute top-0.5 right-0.5 z-20">
             <Lock className="w-2.5 h-2.5 text-white/60" />
-          </div>
-        )}
-
-        {/* Energy cost */}
-        {item.energy && size === 'lg' && (
-          <div className="absolute top-1 right-1 flex items-center gap-0.5 z-20">
-            <Zap className="w-2.5 h-2.5 text-arc" />
-            <span className="text-xs font-bold" style={{ color: '#79C8E2' }}>
-              {item.energy.capacity}
-            </span>
           </div>
         )}
 

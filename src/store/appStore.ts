@@ -21,6 +21,7 @@ interface AppState {
   builderName: string
   builderClassType: number
   activePanel: 'character' | 'vault' | 'loadouts' | 'settings'
+  zonePaneVisible: boolean
 }
 
 interface AppActions {
@@ -36,6 +37,7 @@ interface AppActions {
   setBuilderClassType: (type: number) => void
   clearBuilder: () => void
   setActivePanel: (panel: AppState['activePanel']) => void
+  setZonePaneVisible: (visible: boolean) => void
 }
 
 export const useAppStore = create<AppState & AppActions>()(
@@ -49,6 +51,7 @@ export const useAppStore = create<AppState & AppActions>()(
       builderName: 'New Loadout',
       builderClassType: 2,
       activePanel: 'character',
+      zonePaneVisible: true,
 
       setSelectedCharacter: (id) => set({ selectedCharacterId: id }),
 
@@ -89,6 +92,7 @@ export const useAppStore = create<AppState & AppActions>()(
         set({ builderLoadout: null, builderName: 'New Loadout' }),
 
       setActivePanel: (panel) => set({ activePanel: panel }),
+      setZonePaneVisible: (visible) => set({ zonePaneVisible: visible }),
     }),
     {
       name: 'd2-app',
@@ -98,6 +102,7 @@ export const useAppStore = create<AppState & AppActions>()(
         dimBackup: state.dimBackup,
         builderName: state.builderName,
         builderClassType: state.builderClassType,
+        zonePaneVisible: state.zonePaneVisible,
       }),
     }
   )

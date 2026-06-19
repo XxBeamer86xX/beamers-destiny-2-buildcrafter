@@ -7,10 +7,14 @@ import type {
   DestinyClassDefinition,
   DestinyDamageTypeDefinition,
   DestinyPlugSetDefinition,
+  DestinyActivityDefinition,
+  DestinyDestinationDefinition,
+  DestinyCollectibleDefinition,
+  DestinyRewardSourceDefinition,
 } from '../types/bungie'
 
 const DB_NAME = 'd2-manifest'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 interface ManifestDB {
   meta: { key: string; value: string }
@@ -20,6 +24,10 @@ interface ManifestDB {
   classes: { key: number; value: DestinyClassDefinition }
   damageTypes: { key: number; value: DestinyDamageTypeDefinition }
   plugSets: { key: number; value: DestinyPlugSetDefinition }
+  activities: { key: number; value: DestinyActivityDefinition }
+  destinations: { key: number; value: DestinyDestinationDefinition }
+  collectibles: { key: number; value: DestinyCollectibleDefinition }
+  rewardSources: { key: number; value: DestinyRewardSourceDefinition }
 }
 
 let db: IDBPDatabase<ManifestDB> | null = null
@@ -27,7 +35,7 @@ let db: IDBPDatabase<ManifestDB> | null = null
 async function getDB() {
   if (db) return db
   db = await openDB<ManifestDB>(DB_NAME, DB_VERSION, {
-    upgrade(database) {
+    upgrade(database, oldVersion, _newVersion, transaction) {
       if (!database.objectStoreNames.contains('meta')) {
         database.createObjectStore('meta')
       }
@@ -48,6 +56,23 @@ async function getDB() {
       }
       if (!database.objectStoreNames.contains('plugSets')) {
         database.createObjectStore('plugSets', { keyPath: 'hash' })
+      }
+      // v2: zone loot tables
+      if (!database.objectStoreNames.contains('activities')) {
+        database.createObjectStore('activities', { keyPath: 'hash' })
+      }
+      if (!database.objectStoreNames.contains('destinations')) {
+        database.createObjectStore('destinations', { keyPath: 'hash' })
+      }
+      if (!database.objectStoreNames.contains('collectibles')) {
+        database.createObjectStore('collectibles', { keyPath: 'hash' })
+      }
+      if (!database.objectStoreNames.contains('rewardSources')) {
+        database.createObjectStore('rewardSources', { keyPath: 'hash' })
+      }
+      // Force manifest re-download so new tables get populated
+      if (oldVersion < 2 && database.objectStoreNames.contains('meta')) {
+        transaction.objectStore('meta').delete('version')
       }
     },
   })
@@ -87,12 +112,16 @@ export async function loadManifest(
     label: string
     progress: number
   }> = [
-    { key: 'DestinyInventoryItemDefinition', store: 'items', label: 'items', progress: 20 },
-    { key: 'DestinyStatDefinition', store: 'stats', label: 'stats', progress: 40 },
-    { key: 'DestinySocketCategoryDefinition', store: 'socketCategories', label: 'socket categories', progress: 55 },
-    { key: 'DestinyClassDefinition', store: 'classes', label: 'classes', progress: 65 },
-    { key: 'DestinyDamageTypeDefinition', store: 'damageTypes', label: 'damage types', progress: 75 },
-    { key: 'DestinyPlugSetDefinition', store: 'plugSets', label: 'plug sets', progress: 90 },
+    { key: 'DestinyInventoryItemDefinition', store: 'items', label: 'items', progress: 15 },
+    { key: 'DestinyStatDefinition', store: 'stats', label: 'stats', progress: 30 },
+    { key: 'DestinySocketCategoryDefinition', store: 'socketCategories', label: 'socket categories', progress: 42 },
+    { key: 'DestinyClassDefinition', store: 'classes', label: 'classes', progress: 50 },
+    { key: 'DestinyDamageTypeDefinition', store: 'damageTypes', label: 'damage types', progress: 58 },
+    { key: 'DestinyPlugSetDefinition', store: 'plugSets', label: 'plug sets', progress: 65 },
+    { key: 'DestinyActivityDefinition', store: 'activities', label: 'activities', progress: 74 },
+    { key: 'DestinyDestinationDefinition', store: 'destinations', label: 'destinations', progress: 80 },
+    { key: 'DestinyCollectibleDefinition', store: 'collectibles', label: 'collectibles', progress: 88 },
+    { key: 'DestinyRewardSourceDefinition', store: 'rewardSources', label: 'reward sources', progress: 94 },
   ]
 
   for (const table of tables) {
@@ -177,4 +206,34 @@ export async function isManifestLoaded(): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+export async function getAllActivities(): Promise<DestinyActivityDefinition[]> {
+  const database = await getDB()
+  return database.getAll('activities')
+}
+
+export async function getActivity(hash: number): Promise<DestinyActivityDefinition | undefined> {
+  const database = await getDB()
+  return database.get('activities', hash)
+}
+
+export async function getAllDestinations(): Promise<DestinyDestinationDefinition[]> {
+  const database = await getDB()
+  return database.getAll('destinations')
+}
+
+export async function getDestination(hash: number): Promise<DestinyDestinationDefinition | undefined> {
+  const database = await getDB()
+  return database.get('destinations', hash)
+}
+
+export async function getAllCollectibles(): Promise<DestinyCollectibleDefinition[]> {
+  const database = await getDB()
+  return database.getAll('collectibles')
+}
+
+export async function getAllRewardSources(): Promise<DestinyRewardSourceDefinition[]> {
+  const database = await getDB()
+  return database.getAll('rewardSources')
 }

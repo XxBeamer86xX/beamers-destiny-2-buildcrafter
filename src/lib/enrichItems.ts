@@ -149,13 +149,6 @@ export async function enrichItems(
       damageType,
       isEquipped: instance?.isEquipped,
       canEquip: instance?.canEquip,
-      energy: instance?.energy
-        ? {
-            capacity: instance.energy.energyCapacity,
-            used: instance.energy.energyUsed,
-            type: instance.energy.energyType,
-          }
-        : undefined,
       definition: def,
       tier,
       itemCategory: def ? getItemCategory(def) : undefined,

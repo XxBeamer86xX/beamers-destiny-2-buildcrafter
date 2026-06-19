@@ -17,6 +17,7 @@ const PROFILE_COMPONENTS = [
   102, // ProfileInventories (vault)
   200, // Characters
   201, // CharacterInventories
+  204, // CharacterActivities (current zone/activity)
   205, // CharacterEquipment
   300, // ItemInstances
   302, // ItemPerks
@@ -26,6 +27,9 @@ const PROFILE_COMPONENTS = [
   309, // ItemPlugObjectives
   310, // ItemReusablePlugs
 ].join(',')
+
+// Lightweight components for zone polling (just activities)
+const ACTIVITY_COMPONENTS = [200, 204].join(',')
 
 class BungieApiClient {
   private client: AxiosInstance
@@ -79,6 +83,15 @@ class BungieApiClient {
     const resp = await this.client.get<BungieResponse<DestinyProfileResponse>>(
       `/Destiny2/${membershipType}/Profile/${membershipId}/`,
       { params: { components: PROFILE_COMPONENTS } }
+    )
+    if (resp.data.ErrorCode !== 1) throw new Error(resp.data.Message)
+    return resp.data.Response
+  }
+
+  async getActivityStatus(membershipType: number, membershipId: string): Promise<DestinyProfileResponse> {
+    const resp = await this.client.get<BungieResponse<DestinyProfileResponse>>(
+      `/Destiny2/${membershipType}/Profile/${membershipId}/`,
+      { params: { components: ACTIVITY_COMPONENTS } }
     )
     if (resp.data.ErrorCode !== 1) throw new Error(resp.data.Message)
     return resp.data.Response

@@ -141,7 +141,6 @@ export interface DestinyItem {
   damageType?: DamageType
   isEquipped?: boolean
   canEquip?: boolean
-  energy?: { capacity: number; used: number; type: number }
   // From definition
   definition?: DestinyInventoryItemDefinition
   tier?: ItemTier
